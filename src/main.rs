@@ -5,7 +5,7 @@ use std::collections::HashSet;
 
 use file_handler::{read_file_at_path, string_exists_in_multiline_text};
 use project::{
-    node::{read_deps_file, NodeProject},
+    node_js::{read_deps_file, NodeProject},
     Project,
 };
 use walkdir::WalkDir;

@@ -1,4 +1,4 @@
-pub mod node;
+pub mod node_js;
 
 pub trait Project<F> {
     /// Default contrustor for a Project
