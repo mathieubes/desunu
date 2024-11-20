@@ -26,7 +26,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Clippy
-      run: cargo clippy --verbose
+      run: cargo clippy -- -Dwarnings
 
   test:
     runs-on: ubuntu-latest
