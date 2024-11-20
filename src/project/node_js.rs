@@ -1,74 +1,10 @@
-use std::{
-    collections::{HashMap, HashSet},
-    env,
-    fs::File,
-};
+use std::{collections::HashMap, env, fs::File};
 
-use crate::file_handler::{read_file, read_file_at_path, string_exists_in_multiline_text};
+use crate::file_handler::read_file;
 
 use super::Project;
 
-use colored::Colorize;
 use serde::Deserialize;
-use walkdir::WalkDir;
-
-pub fn run() {
-    let mut project = NodeProject::default();
-    let deps_count = project.parse_deps(&read_deps_file());
-    println!("{deps_count} packages found in current project.");
-    let mut used_deps = HashSet::new();
-
-    let mut scanned_file_count = 0usize;
-    for entry in WalkDir::new(".") {
-        let entry = entry.unwrap();
-        if entry.path().is_dir() || !project.should_scan_file(entry.path().to_str().unwrap()) {
-            continue;
-        }
-
-        scanned_file_count += 1;
-
-        let buf = read_file_at_path(entry.path().to_str().unwrap()).unwrap();
-        let mut used_deps_in_file = Vec::new();
-
-        for dep_name in project.deps.iter() {
-            if string_exists_in_multiline_text(dep_name, &buf) {
-                used_deps_in_file.push(dep_name);
-            }
-        }
-
-        let total_unused_deps_count = deps_count - used_deps.len();
-
-        let print_str = format!(
-            "==============================
-> File : {}
-> Deps found : {:?}
-> Unused deps count : {}
-==============================",
-            entry.path().display(),
-            used_deps_in_file,
-            total_unused_deps_count
-        );
-
-        if used_deps_in_file.is_empty() {
-            println!("{}", print_str.red());
-        } else {
-            println!("{}", print_str);
-        }
-
-        for dep_name in used_deps_in_file.into_iter() {
-            used_deps.insert(dep_name);
-        }
-    }
-
-    for dep_name in project.deps.iter() {
-        if !used_deps.contains(dep_name) {
-            println!("Not used : {}", dep_name.red());
-        }
-    }
-
-    println!("{} files scanned", scanned_file_count);
-    println!("{} unused deps", deps_count - used_deps.len());
-}
 
 const DEPS_FILE: &str = "package.json";
 
@@ -80,7 +16,7 @@ pub struct PackageJson {
 }
 
 pub struct NodeProject {
-    pub deps: Vec<String>,
+    deps: Vec<String>,
 
     allowed_extensions: Vec<String>,
     excluded_paths: Vec<String>,
@@ -96,7 +32,7 @@ impl NodeProject {
     }
 }
 
-impl Project<PackageJson> for NodeProject {
+impl Project for NodeProject {
     fn default() -> Self {
         Self::new(
             vec![
@@ -115,7 +51,7 @@ impl Project<PackageJson> for NodeProject {
     fn parse_deps(&mut self, deps_file_content: &str) -> usize {
         let package_json: PackageJson = serde_json::from_str(deps_file_content)
             .unwrap_or_else(|_| panic!("Cannot parse {DEPS_FILE} file."));
-        self.deps = self.get_deps_names(package_json);
+        self.deps = get_deps_names(package_json);
         self.deps.len()
     }
 
@@ -137,21 +73,8 @@ impl Project<PackageJson> for NodeProject {
         false
     }
 
-    fn get_deps_names(&self, parsed_file: PackageJson) -> Vec<String> {
-        let mut names: Vec<String> =
-            parsed_file
-                .dependencies
-                .iter()
-                .fold(Vec::new(), |mut acc, (name, _version)| {
-                    if name.starts_with("@types/") || is_used_in_package_scripts(&parsed_file, name)
-                    {
-                        return acc;
-                    }
-                    acc.push(name.into());
-                    acc
-                });
-        names.sort();
-        names
+    fn deps(&self) -> &Vec<String> {
+        &self.deps
     }
 }
 
@@ -174,6 +97,22 @@ fn is_used_in_package_scripts(parsed_file: &PackageJson, name: &str) -> bool {
     false
 }
 
+fn get_deps_names(parsed_file: PackageJson) -> Vec<String> {
+    let mut names: Vec<String> =
+        parsed_file
+            .dependencies
+            .iter()
+            .fold(Vec::new(), |mut acc, (name, _version)| {
+                if name.starts_with("@types/") || is_used_in_package_scripts(&parsed_file, name) {
+                    return acc;
+                }
+                acc.push(name.into());
+                acc
+            });
+    names.sort();
+    names
+}
+
 #[cfg(test)]
 mod project_node_tests {
     use std::collections::HashMap;
@@ -181,7 +120,7 @@ mod project_node_tests {
     use super::*;
 
     #[test]
-    fn should_scan_file() {
+    fn should_scan_file_works() {
         let project = NodeProject::default();
         assert_eq!(project.should_scan_file("foo.js"), true);
         assert_eq!(project.should_scan_file("foo.ts"), true);
@@ -209,8 +148,7 @@ mod project_node_tests {
     }
 
     #[test]
-    fn get_deps_names() {
-        let project = NodeProject::default();
+    fn get_deps_names_works() {
         let mut package_json = PackageJson {
             dependencies: HashMap::new(),
             scripts: HashMap::new(),
@@ -225,11 +163,11 @@ mod project_node_tests {
             .dependencies
             .insert("@types/foo".into(), "0.1.0".into());
 
-        assert_eq!(project.get_deps_names(package_json), vec!["bar", "foo"]);
+        assert_eq!(get_deps_names(package_json), vec!["bar", "foo"]);
     }
 
     #[test]
-    fn parse_deps() {
+    fn parse_deps_works() {
         let mut project = NodeProject::default();
 
         let file_content = "{
