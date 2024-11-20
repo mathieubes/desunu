@@ -1,6 +1,6 @@
-mod node;
+pub mod node;
 
-trait Project<F> {
+pub trait Project<F> {
     /// Default contrustor for a Project
     /// Some informations could be changes likes accepeted_extensions for example this is why is
     /// why structs implementing Project should have their own constructors too to change some
@@ -12,7 +12,7 @@ trait Project<F> {
 
     /// Check if a file is theorically a dependency importer
     /// Meaning that the file should have extension, name or anything else matching the language.
-    fn is_deps_importer(&self, file_name: &str) -> bool;
+    fn should_scan_file(&self, file_name: &str) -> bool;
 
     fn get_deps_names(&self, parsed_file: F) -> Vec<String>;
 }

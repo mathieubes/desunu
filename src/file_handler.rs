@@ -8,6 +8,13 @@ pub fn read_file(mut f: File) -> Result<String, String> {
     }
 }
 
+pub fn read_file_at_path(path: &str) -> Result<String, String> {
+    match File::open(path) {
+        Ok(f) => read_file(f),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
 pub fn string_exists_in_multiline_text(term: &str, content: &str) -> bool {
     for line in content.lines() {
         if line.contains(term) {

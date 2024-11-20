@@ -10,19 +10,23 @@ const DEPS_FILE: &'static str = "package.json";
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct PackageJson {
+pub struct PackageJson {
     dependencies: HashMap<String, String>,
+    scripts: HashMap<String, String>,
 }
 
-struct NodeProject {
+pub struct NodeProject {
+    pub deps: Vec<String>,
+
     allowed_extensions: Vec<String>,
-    deps: Vec<String>,
+    excluded_paths: Vec<String>,
 }
 
 impl NodeProject {
-    fn new(allowed_extensions: Vec<String>) -> Self {
+    fn new(allowed_extensions: Vec<String>, excluded_files: Vec<String>) -> Self {
         Self {
             allowed_extensions,
+            excluded_paths: excluded_files,
             deps: vec![],
         }
     }
@@ -30,10 +34,18 @@ impl NodeProject {
 
 impl Project<PackageJson> for NodeProject {
     fn default() -> Self {
-        Self {
-            allowed_extensions: vec!["js".into(), "jsx".into(), "ts".into(), "tsx".into()],
-            deps: vec![],
-        }
+        Self::new(
+            vec![
+                "js".into(),
+                "jsx".into(),
+                "ts".into(),
+                "tsx".into(),
+                "scss".into(),
+                "sass".into(),
+                "json".into(),
+            ],
+            vec!["package.json".into(), "node_modules/".into()],
+        )
     }
 
     fn parse_deps(&mut self, deps_file_content: &str) -> usize {
@@ -43,9 +55,18 @@ impl Project<PackageJson> for NodeProject {
         self.deps.len()
     }
 
-    fn is_deps_importer(&self, file_name: &str) -> bool {
+    fn should_scan_file(&self, file_path: &str) -> bool {
+        if file_path == "." {
+            return true;
+        }
+
+        for excluded in self.excluded_paths.iter() {
+            if file_path.contains(excluded) {
+                return false;
+            }
+        }
         for ext in self.allowed_extensions.iter() {
-            if file_name.ends_with(&format!(".{ext}")) {
+            if file_path.ends_with(&format!(".{ext}")) {
                 return true;
             }
         }
@@ -53,18 +74,24 @@ impl Project<PackageJson> for NodeProject {
     }
 
     fn get_deps_names(&self, parsed_file: PackageJson) -> Vec<String> {
-        // TODO Dependency with '@types/' prefix shoud not be pushed in the deps array
-        let mut names: Vec<String> = parsed_file
-            .dependencies
-            .iter()
-            .map(|(name, _version)| name.into())
-            .collect();
+        let mut names: Vec<String> =
+            parsed_file
+                .dependencies
+                .iter()
+                .fold(Vec::new(), |mut acc, (name, _version)| {
+                    if name.starts_with("@types/") || is_used_in_package_scripts(&parsed_file, name)
+                    {
+                        return acc;
+                    }
+                    acc.push(name.into());
+                    acc
+                });
         names.sort();
         names
     }
 }
 
-fn read_deps_file() -> String {
+pub fn read_deps_file() -> String {
     let f = File::open(DEPS_FILE).expect(&format!(
         "No file \"{DEPS_FILE}\" in {}",
         env::current_dir().unwrap().display()
@@ -72,11 +99,23 @@ fn read_deps_file() -> String {
     read_file(f).expect(&format!("Cannot read {DEPS_FILE} file."))
 }
 
+fn is_used_in_package_scripts(parsed_file: &PackageJson, name: &str) -> bool {
+    for script in parsed_file.scripts.values() {
+        if script.contains(name) {
+            return true;
+        }
+    }
+    return false;
+}
+
 #[cfg(test)]
 mod project_node_tests {
     use std::collections::HashMap;
 
-    use crate::project::{node::PackageJson, Project};
+    use crate::project::{
+        node::{is_used_in_package_scripts, PackageJson},
+        Project,
+    };
 
     use super::NodeProject;
 
@@ -92,25 +131,36 @@ mod project_node_tests {
                 String::from("tsx")
             ]
         );
-        let project = NodeProject::new(vec![String::from("foo")]);
+        let project = NodeProject::new(vec![String::from("foo")], Vec::new());
         assert_eq!(project.allowed_extensions, vec![String::from("foo")]);
     }
 
     #[test]
-    fn is_deps_importer() {
+    fn should_scan_file() {
         let project = NodeProject::default();
-        assert_eq!(project.is_deps_importer("foo.js"), true);
-        assert_eq!(project.is_deps_importer("foo.ts"), true);
-        assert_eq!(project.is_deps_importer("foo.tsx"), true);
-        assert_eq!(project.is_deps_importer("foo.jsx"), true);
-        assert_eq!(project.is_deps_importer("foo.rs"), false);
-        assert_eq!(project.is_deps_importer("foo.jssx"), false);
+        assert_eq!(project.should_scan_file("foo.js"), true);
+        assert_eq!(project.should_scan_file("foo.ts"), true);
+        assert_eq!(project.should_scan_file("foo.tsx"), true);
+        assert_eq!(project.should_scan_file("foo.jsx"), true);
+        assert_eq!(project.should_scan_file("foo.rs"), false);
+        assert_eq!(project.should_scan_file("foo.jssx"), false);
+        assert_eq!(project.should_scan_file("package.json"), false);
+        assert_eq!(project.should_scan_file("foo/node_modules/foo.ts"), false);
 
-        // Making a project to only test .js files
-        let project = NodeProject::new(vec![String::from("js")]);
-        assert_eq!(project.is_deps_importer("foo.js"), true);
-        assert_eq!(project.is_deps_importer("foo.ts"), false);
-        assert_eq!(project.is_deps_importer("foo.jsx"), false);
+        let project = NodeProject::new(vec![String::from("js")], Vec::new());
+        assert_eq!(project.should_scan_file("foo.js"), true);
+        assert_eq!(project.should_scan_file("foo.ts"), false);
+        assert_eq!(project.should_scan_file("foo.jsx"), false);
+
+        let project = NodeProject::new(
+            vec![String::from("ts")],
+            vec![String::from("bar.ts"), String::from("node_modules/")],
+        );
+        assert_eq!(project.should_scan_file("foo/bar/foo.ts"), true);
+        assert_eq!(project.should_scan_file("foo/bar/bar.ts"), false);
+        assert_eq!(project.should_scan_file("bar.ts"), false);
+        assert_eq!(project.should_scan_file("foo/bar/package.json"), false);
+        assert_eq!(project.should_scan_file("foo/node_modules/foo.ts"), false);
     }
 
     #[test]
@@ -118,9 +168,17 @@ mod project_node_tests {
         let project = NodeProject::default();
         let mut package_json = PackageJson {
             dependencies: HashMap::new(),
+            scripts: HashMap::new(),
         };
-        package_json.dependencies.insert("foo".into(), "0.1.0".into());
-        package_json.dependencies.insert("bar".into(), "0.1.0".into());
+        package_json
+            .dependencies
+            .insert("foo".into(), "0.1.0".into());
+        package_json
+            .dependencies
+            .insert("bar".into(), "0.1.0".into());
+        package_json
+            .dependencies
+            .insert("@types/foo".into(), "0.1.0".into());
 
         assert_eq!(project.get_deps_names(package_json), vec!["bar", "foo"]);
     }
@@ -130,9 +188,14 @@ mod project_node_tests {
         let mut project = NodeProject::default();
         let mut package_json = PackageJson {
             dependencies: HashMap::new(),
+            scripts: HashMap::new(),
         };
-        package_json.dependencies.insert("foo".into(), "0.1.0".into());
-        package_json.dependencies.insert("bar".into(), "0.1.0".into());
+        package_json
+            .dependencies
+            .insert("foo".into(), "0.1.0".into());
+        package_json
+            .dependencies
+            .insert("bar".into(), "0.1.0".into());
 
         let file_content = "{
         \"name\": \"foo\",
@@ -148,9 +211,22 @@ mod project_node_tests {
         }
         }";
 
-
         assert_eq!(project.parse_deps(file_content), 3);
         assert_eq!(project.deps.len(), 3);
         assert_eq!(project.deps, vec!["bar", "bazz", "foo"]);
+    }
+
+    #[test]
+    fn guess_if_package_scripts_use_deps() {
+        let mut package_json = PackageJson {
+            dependencies: HashMap::new(),
+            scripts: HashMap::new(),
+        };
+        package_json
+            .scripts
+            .insert("foo".into(), "foo bar baz".into());
+
+        assert_eq!(is_used_in_package_scripts(&package_json, "bar"), true);
+        assert_eq!(is_used_in_package_scripts(&package_json, "qux"), false);
     }
 }
