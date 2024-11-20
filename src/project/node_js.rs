@@ -10,7 +10,7 @@ const DEPS_FILE: &str = "package.json";
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct PackageJson {
+pub struct NodePackagesHandler {
     dependencies: HashMap<String, String>,
     scripts: HashMap<String, String>,
 }
@@ -49,9 +49,9 @@ impl Project for NodeProject {
     }
 
     fn parse_deps(&mut self, deps_file_content: &str) -> usize {
-        let package_json: PackageJson = serde_json::from_str(deps_file_content)
+        let packages_handler: NodePackagesHandler = serde_json::from_str(deps_file_content)
             .unwrap_or_else(|_| panic!("Cannot parse {DEPS_FILE} file."));
-        self.deps = get_deps_names(package_json);
+        self.deps = get_deps_names(packages_handler);
         self.deps.len()
     }
 
@@ -88,7 +88,7 @@ pub fn read_deps_file() -> String {
     read_file(f).unwrap_or_else(|_| panic!("Cannot read {DEPS_FILE} file."))
 }
 
-fn is_used_in_package_scripts(parsed_file: &PackageJson, name: &str) -> bool {
+fn is_used_in_package_scripts(parsed_file: &NodePackagesHandler, name: &str) -> bool {
     for script in parsed_file.scripts.values() {
         if script.contains(name) {
             return true;
@@ -97,7 +97,7 @@ fn is_used_in_package_scripts(parsed_file: &PackageJson, name: &str) -> bool {
     false
 }
 
-fn get_deps_names(parsed_file: PackageJson) -> Vec<String> {
+fn get_deps_names(parsed_file: NodePackagesHandler) -> Vec<String> {
     let mut names: Vec<String> =
         parsed_file
             .dependencies
@@ -149,21 +149,21 @@ mod project_node_tests {
 
     #[test]
     fn get_deps_names_works() {
-        let mut package_json = PackageJson {
+        let mut packages_handler = NodePackagesHandler {
             dependencies: HashMap::new(),
             scripts: HashMap::new(),
         };
-        package_json
+        packages_handler
             .dependencies
             .insert("foo".into(), "0.1.0".into());
-        package_json
+        packages_handler
             .dependencies
             .insert("bar".into(), "0.1.0".into());
-        package_json
+        packages_handler
             .dependencies
             .insert("@types/foo".into(), "0.1.0".into());
 
-        assert_eq!(get_deps_names(package_json), vec!["bar", "foo"]);
+        assert_eq!(get_deps_names(packages_handler), vec!["bar", "foo"]);
     }
 
     #[test]
@@ -194,15 +194,15 @@ mod project_node_tests {
 
     #[test]
     fn guess_if_package_scripts_use_deps() {
-        let mut package_json = PackageJson {
+        let mut packages_handler = NodePackagesHandler {
             dependencies: HashMap::new(),
             scripts: HashMap::new(),
         };
-        package_json
+        packages_handler
             .scripts
             .insert("foo".into(), "foo bar baz".into());
 
-        assert_eq!(is_used_in_package_scripts(&package_json, "bar"), true);
-        assert_eq!(is_used_in_package_scripts(&package_json, "qux"), false);
+        assert_eq!(is_used_in_package_scripts(&packages_handler, "bar"), true);
+        assert_eq!(is_used_in_package_scripts(&packages_handler, "qux"), false);
     }
 }
