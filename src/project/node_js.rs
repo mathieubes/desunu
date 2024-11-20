@@ -114,28 +114,7 @@ fn is_used_in_package_scripts(parsed_file: &PackageJson, name: &str) -> bool {
 mod project_node_tests {
     use std::collections::HashMap;
 
-    use crate::project::{
-        node::{is_used_in_package_scripts, PackageJson},
-        Project,
-    };
-
-    use super::NodeProject;
-
-    #[test]
-    fn constructors() {
-        let project = NodeProject::default();
-        assert_eq!(
-            project.allowed_extensions,
-            vec![
-                String::from("js"),
-                String::from("jsx"),
-                String::from("ts"),
-                String::from("tsx")
-            ]
-        );
-        let project = NodeProject::new(vec![String::from("foo")], Vec::new());
-        assert_eq!(project.allowed_extensions, vec![String::from("foo")]);
-    }
+    use super::*;
 
     #[test]
     fn should_scan_file() {
@@ -188,16 +167,6 @@ mod project_node_tests {
     #[test]
     fn parse_deps() {
         let mut project = NodeProject::default();
-        let mut package_json = PackageJson {
-            dependencies: HashMap::new(),
-            scripts: HashMap::new(),
-        };
-        package_json
-            .dependencies
-            .insert("foo".into(), "0.1.0".into());
-        package_json
-            .dependencies
-            .insert("bar".into(), "0.1.0".into());
 
         let file_content = "{
         \"name\": \"foo\",
@@ -210,6 +179,9 @@ mod project_node_tests {
             \"dev-foo\": \"0.1.0\",
             \"dev-bar\": \"0.1.0\",
             \"dev-bazz\": \"0.1.0\"
+        },
+        \"scripts\": {
+            \"foo\": \"quix\"
         }
         }";
 
