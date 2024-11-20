@@ -1,7 +1,7 @@
 mod file_handler;
 mod project;
 
-use project::{node_js::NodeProject, scan_project_deps, Project};
+use project::{rust::RustProject, scan_project_deps, Project};
 
 fn main() {
     println!(
@@ -9,5 +9,5 @@ fn main() {
         std::env::current_dir().unwrap().display()
     );
 
-    scan_project_deps(NodeProject::default());
+    scan_project_deps(RustProject::default());
 }

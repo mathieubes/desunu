@@ -1,12 +1,12 @@
 use std::collections::HashSet;
 
 use colored::Colorize;
-use node_js::read_deps_file;
 use walkdir::WalkDir;
 
 use crate::file_handler::{read_file_at_path, string_exists_in_multiline_text};
 
 pub mod node_js;
+pub mod rust;
 
 pub trait Project {
     /// Default contrustor for a Project
@@ -23,10 +23,12 @@ pub trait Project {
     fn should_scan_file(&self, file_name: &str) -> bool;
 
     fn deps(&self) -> &Vec<String>;
+
+    fn read_deps_file() -> String;
 }
 
 pub fn scan_project_deps<T: Project>(mut project: T) {
-    let deps_count = project.parse_deps(&read_deps_file());
+    let deps_count = project.parse_deps(&T::read_deps_file());
     println!("{deps_count} packages found in current project.");
     let mut used_deps = HashSet::new();
 
