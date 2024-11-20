@@ -1,7 +1,7 @@
 mod file_handler;
 mod project;
 
-use project::{node_js::NodeProject, run_project, Project};
+use project::{node_js::NodeProject, scan_project_deps, Project};
 
 fn main() {
     println!(
@@ -9,5 +9,5 @@ fn main() {
         std::env::current_dir().unwrap().display()
     );
 
-    run_project(NodeProject::default());
+    scan_project_deps(NodeProject::default());
 }

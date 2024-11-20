@@ -25,7 +25,7 @@ pub trait Project {
     fn deps(&self) -> &Vec<String>;
 }
 
-pub fn run_project<T: Project>(mut project: T) {
+pub fn scan_project_deps<T: Project>(mut project: T) {
     let deps_count = project.parse_deps(&read_deps_file());
     println!("{deps_count} packages found in current project.");
     let mut used_deps = HashSet::new();
