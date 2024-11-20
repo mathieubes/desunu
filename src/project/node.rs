@@ -6,7 +6,7 @@ use super::Project;
 
 use serde::Deserialize;
 
-const DEPS_FILE: &'static str = "package.json";
+const DEPS_FILE: &str = "package.json";
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -50,7 +50,7 @@ impl Project<PackageJson> for NodeProject {
 
     fn parse_deps(&mut self, deps_file_content: &str) -> usize {
         let package_json: PackageJson = serde_json::from_str(deps_file_content)
-            .expect(&format!("Cannot parse {DEPS_FILE} file."));
+            .unwrap_or_else(|_| panic!("Cannot parse {DEPS_FILE} file."));
         self.deps = self.get_deps_names(package_json);
         self.deps.len()
     }
@@ -70,7 +70,7 @@ impl Project<PackageJson> for NodeProject {
                 return true;
             }
         }
-        return false;
+        false
     }
 
     fn get_deps_names(&self, parsed_file: PackageJson) -> Vec<String> {
@@ -92,11 +92,13 @@ impl Project<PackageJson> for NodeProject {
 }
 
 pub fn read_deps_file() -> String {
-    let f = File::open(DEPS_FILE).expect(&format!(
-        "No file \"{DEPS_FILE}\" in {}",
-        env::current_dir().unwrap().display()
-    ));
-    read_file(f).expect(&format!("Cannot read {DEPS_FILE} file."))
+    let f = File::open(DEPS_FILE).unwrap_or_else(|_| {
+        panic!(
+            "No file \"{DEPS_FILE}\" in {}",
+            env::current_dir().unwrap().display()
+        )
+    });
+    read_file(f).unwrap_or_else(|_| panic!("Cannot read {DEPS_FILE} file."))
 }
 
 fn is_used_in_package_scripts(parsed_file: &PackageJson, name: &str) -> bool {
@@ -105,7 +107,7 @@ fn is_used_in_package_scripts(parsed_file: &PackageJson, name: &str) -> bool {
             return true;
         }
     }
-    return false;
+    false
 }
 
 #[cfg(test)]

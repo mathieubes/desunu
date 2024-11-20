@@ -54,7 +54,7 @@ fn main() {
             total_unused_deps_count
         );
 
-        if used_deps_in_file.len() == 0 {
+        if used_deps_in_file.is_empty() {
             println!("{}", print_str.red());
         } else {
             println!("{}", print_str);
