@@ -23,10 +23,10 @@ pub struct NodeProject {
 }
 
 impl NodeProject {
-    fn new(allowed_extensions: Vec<String>, excluded_files: Vec<String>) -> Self {
+    fn new(allowed_extensions: Vec<String>, excluded_paths: Vec<String>) -> Self {
         Self {
             allowed_extensions,
-            excluded_paths: excluded_files,
+            excluded_paths,
             deps: vec![],
         }
     }
@@ -55,6 +55,7 @@ impl Project for NodeProject {
         self.deps.len()
     }
 
+    // TODO should_scan_file functions are exactly the same for both projects
     fn should_scan_file(&self, file_path: &str) -> bool {
         if file_path == "." {
             return true;
@@ -76,16 +77,16 @@ impl Project for NodeProject {
     fn deps(&self) -> &Vec<String> {
         &self.deps
     }
-}
 
-pub fn read_deps_file() -> String {
-    let f = File::open(DEPS_FILE).unwrap_or_else(|_| {
-        panic!(
-            "No file \"{DEPS_FILE}\" in {}",
-            env::current_dir().unwrap().display()
-        )
-    });
-    read_file(f).unwrap_or_else(|_| panic!("Cannot read {DEPS_FILE} file."))
+    fn read_deps_file() -> String {
+        let f = File::open(DEPS_FILE).unwrap_or_else(|_| {
+            panic!(
+                "No file \"{DEPS_FILE}\" in {}",
+                env::current_dir().unwrap().display()
+            )
+        });
+        read_file(f).unwrap_or_else(|_| panic!("Cannot read {DEPS_FILE} file."))
+    }
 }
 
 fn is_used_in_package_scripts(parsed_file: &NodePackagesHandler, name: &str) -> bool {
