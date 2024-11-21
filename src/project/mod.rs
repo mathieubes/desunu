@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt::Display};
 
 use colored::Colorize;
 use walkdir::WalkDir;
@@ -7,6 +7,18 @@ use crate::file_handler::{read_file_at_path, string_exists_in_multiline_text};
 
 pub mod node_js;
 pub mod rust;
+
+pub struct ScanningResult {
+    scanned_deps_count: usize,
+    unused_deps_count: usize,
+    unused_deps: HashSet<String>,
+}
+
+impl Display for ScanningResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        todo!()
+    }
+}
 
 pub trait Project {
     /// Default contrustor for a Project
@@ -27,7 +39,7 @@ pub trait Project {
     fn read_deps_file() -> String;
 }
 
-pub fn scan_project_deps<T: Project>(mut project: T) {
+pub fn scan_project_deps<T: Project>(mut project: T) -> ScanningResult {
     let deps_count = project.parse_deps(&T::read_deps_file());
     println!("{deps_count} packages found in current project.");
     let mut used_deps = HashSet::new();
