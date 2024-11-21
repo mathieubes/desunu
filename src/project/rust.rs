@@ -43,7 +43,7 @@ impl Project for RustProject {
 
     fn parse_deps(&mut self, deps_file_content: &str) -> usize {
         let packages_handler: RustPackagesHandler = toml::from_str(deps_file_content)
-                .unwrap_or_else(|e| panic!("Cannot parse {DEPS_FILE} file. {}", e.to_string()));
+                .unwrap_or_else(|e| panic!("Cannot parse {DEPS_FILE} file. {}", e));
         self.deps = get_deps_names(packages_handler);
         self.deps.len()
     }
