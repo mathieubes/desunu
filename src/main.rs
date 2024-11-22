@@ -12,7 +12,9 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    #[clap(visible_alias = "a")]
     All,
+    #[clap(visible_alias = "node")]
     NodeJS,
     Rust,
 }
