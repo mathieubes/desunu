@@ -11,12 +11,12 @@ const DEPS_FILE: &str = "Cargo.toml";
 
 #[derive(Deserialize)]
 pub struct RustPackagesHandler {
-    dependencies: Table
+    dependencies: Table,
 }
 
 pub struct RustProject {
     deps: Vec<String>,
-    
+
     allowed_extensions: Vec<String>,
     excluded_paths: Vec<String>,
 }
@@ -43,7 +43,7 @@ impl Project for RustProject {
 
     fn parse_deps(&mut self, deps_file_content: &str) -> usize {
         let packages_handler: RustPackagesHandler = toml::from_str(deps_file_content)
-                .unwrap_or_else(|e| panic!("Cannot parse {DEPS_FILE} file. {}", e));
+            .unwrap_or_else(|e| panic!("Cannot parse {DEPS_FILE} file. {}", e));
         self.deps = get_deps_names(packages_handler);
         self.deps.len()
     }
@@ -84,12 +84,12 @@ impl Project for RustProject {
 }
 
 fn get_deps_names(parsed_file: RustPackagesHandler) -> Vec<String> {
-    let mut names = Vec::from_iter(parsed_file
-        .dependencies
-        .iter()
-        .map(|(name, _version)| {
-            name.clone()
-        }));
+    let mut names = Vec::from_iter(
+        parsed_file
+            .dependencies
+            .iter()
+            .map(|(name, _version)| name.clone()),
+    );
     names.sort();
     names
 }
@@ -109,7 +109,7 @@ mod project_rust_tests {
 
     #[test]
     fn get_deps_names_works() {
-        let mut packages_handler = RustPackagesHandler{
+        let mut packages_handler = RustPackagesHandler {
             dependencies: Table::new(),
         };
         packages_handler
