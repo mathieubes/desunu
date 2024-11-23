@@ -66,7 +66,7 @@ fn get_deps_names(parsed_file: NodePackagesHandler) -> Vec<String> {
 }
 
 #[cfg(test)]
-mod project_node_tests {
+mod tests {
     use std::collections::HashMap;
 
     use super::*;

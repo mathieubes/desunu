@@ -96,7 +96,7 @@ fn should_scan_file<T: Project>(file_path: &str) -> bool {
 }
 
 #[cfg(test)]
-mod projects_tests {
+mod tests {
     use super::{should_scan_file, node_js::NodeProject, rust::RustProject};
 
     #[test]

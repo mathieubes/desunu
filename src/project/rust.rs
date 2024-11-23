@@ -49,7 +49,7 @@ fn get_deps_names(parsed_file: RustPackagesHandler) -> Vec<String> {
 }
 
 #[cfg(test)]
-mod project_rust_tests {
+mod tests {
     use super::*;
 
     #[test]

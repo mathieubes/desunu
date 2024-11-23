@@ -25,7 +25,7 @@ pub fn string_exists_in_multiline_text(term: &str, content: &str) -> bool {
 }
 
 #[cfg(test)]
-mod file_handler_tests {
+mod tests {
     use super::*;
 
     #[test]
