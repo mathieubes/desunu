@@ -69,6 +69,7 @@ We welcome contributions! If you'd like to improve spedesunu or add support for 
 
 ## Roadmap
 
+- Publish the CLI on `brew`, `apt`.
 - Add support for Python, Go, Ruby, and more project types.
 - Customizable configurations for ignoring specific files or dependencies.
 - Advanced reporting formats (JSON, CSV, etc.).
