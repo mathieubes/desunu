@@ -1,6 +1,6 @@
 # desunu
 
-**desunu** is a blazing-fast, Rust-based CLI tool designed to help you locate unused dependencies in your projects. Whether you're working with `package.json` for Node.js, `Cargo.toml` for Rust, or eventually other project types, **desunu** scans your files, analyzes your dependencies, and provides actionable insights. 
+**desunu** (*unused* backward) is a blazing-fast, Rust-based CLI tool designed to help you locate unused dependencies in your projects. Whether you're working with `package.json` for Node.js, `Cargo.toml` for Rust, or eventually other project types, **desunu** scans your files, analyzes your dependencies, and provides actionable insights. 
 
 Our vision is simple: **desunu** should be the *first tool you think of* when you need to find unused things.
 
