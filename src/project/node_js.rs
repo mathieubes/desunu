@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use super::Project;
 
@@ -12,13 +12,13 @@ pub struct NodePackagesHandler {
 }
 
 pub struct NodeProject {
-    deps: Vec<String>,
+    deps: HashSet<String>,
 }
 
 impl NodeProject {
     pub fn new() -> Self {
         Self {
-            deps: Vec::new()
+            deps: HashSet::new(),
         }
     }
 }
@@ -35,7 +35,7 @@ impl Project for NodeProject {
         self.deps.len()
     }
 
-    fn deps(&self) -> &Vec<String> {
+    fn deps(&self) -> &HashSet<String> {
         &self.deps
     }
 }
@@ -49,20 +49,17 @@ fn is_used_in_package_scripts(parsed_file: &NodePackagesHandler, name: &str) -> 
     false
 }
 
-fn get_deps_names(parsed_file: NodePackagesHandler) -> Vec<String> {
-    let mut names: Vec<String> =
-        parsed_file
-            .dependencies
-            .iter()
-            .fold(Vec::new(), |mut acc, (name, _version)| {
-                if name.starts_with("@types/") || is_used_in_package_scripts(&parsed_file, name) {
-                    return acc;
-                }
-                acc.push(name.into());
-                acc
-            });
-    names.sort();
-    names
+fn get_deps_names(parsed_file: NodePackagesHandler) -> HashSet<String> {
+    parsed_file
+        .dependencies
+        .iter()
+        .fold(HashSet::new(), |mut acc, (name, _version)| {
+            if name.starts_with("@types/") || is_used_in_package_scripts(&parsed_file, name) {
+                return acc;
+            }
+            acc.insert(name.into());
+            acc
+        })
 }
 
 #[cfg(test)]
@@ -87,7 +84,7 @@ mod tests {
             .dependencies
             .insert("@types/foo".into(), "0.1.0".into());
 
-        assert_eq!(get_deps_names(packages_handler), vec!["bar", "foo"]);
+        assert_eq!(get_deps_names(packages_handler), HashSet::from(["bar".into(), "foo".into()]));
     }
 
     #[test]
@@ -113,7 +110,7 @@ mod tests {
 
         assert_eq!(project.parse_deps(file_content), 3);
         assert_eq!(project.deps.len(), 3);
-        assert_eq!(project.deps, vec!["bar", "bazz", "foo"]);
+        assert_eq!(project.deps, HashSet::from(["bar".into(), "bazz".into(), "foo".into()]));
     }
 
     #[test]

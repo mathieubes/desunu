@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use serde::Deserialize;
 use toml::Table;
 
@@ -9,14 +11,12 @@ pub struct RustPackagesHandler {
 }
 
 pub struct RustProject {
-    deps: Vec<String>,
+    deps: HashSet<String>,
 }
 
 impl RustProject {
     pub fn new() -> Self {
-        Self {
-            deps: Vec::new()
-        }
+        Self { deps: HashSet::new() }
     }
 }
 
@@ -32,20 +32,19 @@ impl Project for RustProject {
         self.deps.len()
     }
 
-    fn deps(&self) -> &Vec<String> {
+    fn deps(&self) -> &HashSet<String> {
         &self.deps
     }
 }
 
-fn get_deps_names(parsed_file: RustPackagesHandler) -> Vec<String> {
-    let mut names = Vec::from_iter(
-        parsed_file
-            .dependencies
-            .iter()
-            .map(|(name, _version)| name.clone()),
-    );
-    names.sort();
-    names
+fn get_deps_names(parsed_file: RustPackagesHandler) -> HashSet<String> {
+    parsed_file
+        .dependencies
+        .iter()
+        .fold(HashSet::new(), |mut acc, (name, _version)| {
+            acc.insert(name.into());
+            acc
+        })
 }
 
 #[cfg(test)]
@@ -64,7 +63,7 @@ mod tests {
             .dependencies
             .insert("bar".into(), "0.1.0".into());
 
-        assert_eq!(get_deps_names(packages_handler), Vec::from(["bar", "foo"]));
+        assert_eq!(get_deps_names(packages_handler), HashSet::from(["bar".into(), "foo".into()]));
     }
 
     #[test]
@@ -77,6 +76,6 @@ mod tests {
 
         assert_eq!(project.parse_deps(file_content), 2);
         assert_eq!(project.deps.len(), 2);
-        assert_eq!(project.deps, Vec::from(["bar", "foo"]));
+        assert_eq!(project.deps, HashSet::from(["bar".into(), "foo".into()]));
     }
 }

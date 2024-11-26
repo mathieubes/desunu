@@ -25,7 +25,7 @@ fn main() {
     match cli.command {
         Some(Commands::All) => {
             todo!("Add project detection with the configured package name constant.")
-        },
+        }
         Some(Commands::NodeJS) => scan_project_deps(NodeProject::new()),
         Some(Commands::Rust) => scan_project_deps(RustProject::new()),
         None => {}

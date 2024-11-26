@@ -14,7 +14,7 @@ pub trait Project {
     const EXCLUDED_PATHS: &[&str];
 
     fn parse_deps(&mut self, deps_file_content: &str) -> usize;
-    fn deps(&self) -> &Vec<String>;
+    fn deps(&self) -> &HashSet<String>;
 }
 
 pub fn scan_project_deps<T: Project>(mut project: T) {
@@ -97,7 +97,7 @@ fn should_scan_file<T: Project>(file_path: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{should_scan_file, node_js::NodeProject, rust::RustProject};
+    use super::{node_js::NodeProject, rust::RustProject, should_scan_file};
 
     #[test]
     fn node_js_should_scan_file() {
@@ -111,7 +111,10 @@ mod tests {
         assert_eq!(should_scan_file::<NodeProject>("foo.rs"), false);
         assert_eq!(should_scan_file::<NodeProject>("foo.jssx"), false);
         assert_eq!(should_scan_file::<NodeProject>("package.json"), false);
-        assert_eq!(should_scan_file::<NodeProject>("foo/node_modules/foo.ts"), false);
+        assert_eq!(
+            should_scan_file::<NodeProject>("foo/node_modules/foo.ts"),
+            false
+        );
     }
 
     #[test]
