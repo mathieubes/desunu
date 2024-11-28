@@ -35,8 +35,9 @@ fn main() {
             println!("Starting scan project for rust.");
             scan_project_deps(RustProject::new())
         },
-        None => Err("Command doesn't exists".to_string()),
+        None => panic!("Command doesn't exists"),
     };
+
 
     if let Ok(r) = result {
         r.print_result();
